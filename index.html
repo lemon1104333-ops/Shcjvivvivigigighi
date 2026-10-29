@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>シラスに会いにいこう</title>
+<style>
+:root{--bg:#1a1020;--bg2:#3a1c2e;--fg:#f8eedd;--card:#00000055;--acc:#ffb347;--line:#06c755;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans",sans-serif}
+body{background:linear-gradient(var(--bg),var(--bg2));min-height:100vh}
+#w{max-width:480px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px;min-height:100vh;box-sizing:border-box}
+#top{display:flex;justify-content:space-between;font-size:13px;opacity:.85}
+#ico{font-size:44px;text-align:center;letter-spacing:6px}
+.card{background:var(--card);border-radius:14px;padding:16px;line-height:1.8;font-size:16px}
+.card p{margin:0 0 8px}
+.msg{background:#fff;color:#222;border-radius:14px;padding:10px 14px;font-size:15px;line-height:1.6;border-left:6px solid var(--line)}
+.msg b{display:block;font-size:12px;color:#06a047}
+.loc{margin-top:6px;background:#eef6ee;border-radius:10px;padding:8px 10px;font-size:14px}
+.call{text-align:center;font-size:18px;padding:12px;border-radius:14px;background:#2a6;color:#fff}
+button{font:inherit;font-size:16px;color:var(--fg);background:#ffffff1a;border:2px solid var(--acc);border-radius:14px;padding:14px;text-align:left;cursor:pointer;line-height:1.5}
+button:active{background:var(--acc);color:#222}
+#ch{display:flex;flex-direction:column;gap:10px}
+.end{text-align:center;font-size:26px;font-weight:bold}
+#ico{display:none}
+.stage{display:none;position:relative;height:140px;background:#ffffff14;border-radius:14px;overflow:hidden}
+.ground{position:absolute;bottom:0;left:0;right:0;height:20px;background:#2b1a24}
+.doll{position:absolute;bottom:16px;width:44px;height:96px;transition:left 1.2s ease}
+.doll .h{width:32px;height:32px;border-radius:50%;background:#ffd9b0;margin:22px auto 0;position:relative;box-shadow:inset 0 9px 0 var(--hair)}
+.doll .h::before,.doll .h::after{content:"";position:absolute;top:18px;width:4px;height:4px;border-radius:50%;background:#222}
+.doll .h::before{left:9px}.doll .h::after{right:9px}
+.doll .b{width:28px;height:34px;border-radius:12px 12px 6px 6px;margin:2px auto 0}
+.nm{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:11px;white-space:nowrap}
+.say{display:none;position:absolute;top:-26px;left:50%;transform:translateX(-50%);background:#fff;color:#c00;font-weight:bold;font-size:13px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.talk .say{display:block}
+.arm{position:absolute;top:56px;width:8px;height:26px;border-radius:4px;transform-origin:50% 3px}
+.arm.l{left:2px}.arm.r{right:2px}
+.leg{position:absolute;bottom:0;width:9px;height:14px;background:#333;border-radius:3px;transform-origin:50% 0}
+.leg.l{left:12px}.leg.r{right:12px}
+@keyframes bob{50%{transform:translateY(-6px)}}
+@keyframes step{0%,100%{transform:rotate(25deg)}50%{transform:rotate(-25deg)}}
+@keyframes wave{0%,100%{transform:rotate(150deg)}50%{transform:rotate(190deg)}}
+@keyframes jump{40%{transform:translateY(-30px)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px) rotate(-6deg)}75%{transform:translateX(6px) rotate(6deg)}}
+.idle{animation:bob 2s ease-in-out infinite}
+.walk{animation:bob .4s infinite}
+.walk .leg.l,.walk .arm.r{animation:step .4s infinite}
+.walk .leg.r,.walk .arm.l{animation:step .4s infinite reverse}
+.phone .arm.r{transform:rotate(160deg)}
+.phone .arm.r::after{content:"";position:absolute;bottom:-4px;left:-3px;width:12px;height:16px;background:#222;border:2px solid #6cf;border-radius:3px}
+.wave .arm.r{animation:wave .5s infinite}
+.jump{animation:jump .6s infinite}
+.jump .arm.r{transform:rotate(160deg)}.jump .arm.l{transform:rotate(-160deg)}
+.shock{animation:shake .15s infinite}
+.shock .arm.r{transform:rotate(150deg)}.shock .arm.l{transform:rotate(-150deg)}
+</style></head><body>
+<div id="w"><div id="top"><span>📍 伊丹</span><span id="cnt"></span></div><div id="ico"></div><canvas id="fp" width="360" height="300" style="width:100%;border-radius:14px;display:block;background:#000"></canvas><div class="stage" id="stage"></div><div id="box"></div><div id="ch"></div></div>
+<script>
+const S0={
+start:{i:'🚉',t:['宇多津駅の改札前。','伊丹のスマホが鳴った。'],m:{t:'祭りにおるでー！はよ来て！',l:null},c:[['すぐ返信して場所を聞く','loc1'],['とりあえず駅を出て歩き出す','walk0']]},
+walk0:{i:'🚶🌃',t:['駅を出たものの、祭りの会場がどっちかわからん。','結局スマホを取り出した。'],c:[['シラスに「どこ？」と送る','loc1'],['駅前でもう少し粘る','loc1']]},
+loc1:{i:'📱📍',n:1,t:['シラスから位置情報が届いた。'],m:{t:'まず駅から南に進んで、大きい道を渡ってな！',l:'📍 宇多津駅から南の大通り'},c:[['大通りをまっすぐ進む','walk1'],['近道っぽい裏道を行く','walk1']]},
+walk1:{i:'🌆🚗',t:['夜の道を歩く。遠くで太鼓の音が聞こえる…気がする。','少し進んだところで、またスマホが鳴った。'],c:[['すぐ画面を見る','loc2'],['歩きながらチラ見する','loc2']]},
+loc2:{i:'📱📍',n:2,t:['2回目の位置情報が届いた。'],m:{t:'ここやで！小学校のほうやで！',l:'📍 宇多津小学校のほう'},c:[['位置情報どおりに向かう','school'],['ちょっと怪しいけど、とにかく向かう','school']]},
+school:{i:'🏫🌑',t:['宇多津小学校に着いた。','…静かや。祭りの音がしない。','ここ、違う気がする。'],c:[['シラスに電話をかける','callOut'],['もう少し待ってみる','callIn']]},
+callOut:{i:'📞',t:['伊丹「もしもし？シラス？なんか学校なんやけど！」'],call:'📞 シラスに発信中…',m:{t:'うそ！？間違えて送ったわ、ごめん！今送りなおすで！',l:null},c:[['「早くして！」と言う','loc3'],['「ええよ、待っとく」と言う','loc3']]},
+callIn:{i:'📞',t:['待っていると、スマホが震えた。'],call:'📞 シラスから着信！',m:{t:'もしもし！？さっきの位置ちゃうかった！ごめん！今送りなおすで！',l:null},c:[['「やっぱりな」と笑う','loc3'],['「早く！」と急かす','loc3']]},
+loc3:{i:'📱📍',n:3,t:['3回目の位置情報が届いた。'],m:{t:'今度こそ合ってる！海のほうの広い通りやで！',l:'📍 海のほうの広い通り'},c:[['走って向かう','walk3'],['歩いて向かう','walk3']]},
+walk3:{i:'🏃🌊',t:['潮の香りがしてきた。','だんだん太鼓の音が大きくなる。'],c:[['音のするほうへ進む','loc4'],['もう一度スマホを確認する','loc4']]},
+loc4:{i:'📱📍',n:4,t:['最後の位置情報が届いた。'],m:{t:'提灯の下におるで！手振ってる！',l:'📍 会場の入口の提灯の下'},c:[['人混みをかきわけて進む','meet'],['屋台のたこ焼きを買ってから行く','meet']]},
+meet:{i:'🏮🎆',t:['提灯の下で、手を振るシラスが見えた。','「おったー！」','一緒に屋台を回って、花火も見た。楽しい夜やった。','そして、別れの時間になった。'],c:[['「ありがとう」と言う','clear'],['「バイバイ」と言う','over']]},
+clear:{i:'🎉🏮',end:1,t:['伊丹「今日はほんまにありがとう！」','シラス「こっちこそ来てくれてありがとう！」',''],big:'🎊 ゲームクリア！ 🎊'},
+over:{i:'💥😱',end:1,t:['伊丹「バイバイ！」','…その瞬間。','伊丹「エロエリー！！」と叫んでしまった。','周りの人がみんな振り返った…'],big:'GAME OVER'}
+};
+const $=id=>document.getElementById(id);
+const A={start:['idle',8,0],walk0:['walk',20,0],loc1:['phone',20,0],walk1:['walk',38,0],loc2:['phone',38,0],school:['idle',60,0],callOut:['phone',60,0],callIn:['phone',60,0],loc3:['phone',28,0],walk3:['walk',52,0],loc4:['phone',52,1,'wave'],meet:['idle',58,1,'wave'],clear:['jump',50,1,'jump','ありがとう！'],over:['shock',50,1,'shock','エロエリー！！']};
+function dollHTML(id,c,hair,nm){return '<div class="doll idle" id="'+id+'"><span class="say"></span><span class="nm">'+nm+'</span><div class="h" style="--hair:'+hair+'"></div><div class="b" style="background:'+c+'"></div><i class="arm l" style="background:'+c+'"></i><i class="arm r" style="background:'+c+'"></i><i class="leg l"></i><i class="leg r"></i></div>'}
+$('stage').innerHTML='<div class="ground"></div>'+dollHTML('d1','#3b7dd8','#2a2a33','伊丹')+dollHTML('d2','#e8607a','#7a4a2a','シラス');
+function stg0(k){const a=A[k]||['idle',10,0],d=$('d1'),e=$('d2'),m=a[4]||'';d.style.left=a[1]+'%';d.className='doll '+a[0]+(m?' talk':'');d.querySelector('.say').textContent=m;e.style.display=a[2]?'':'none';e.className='doll '+(a[3]||'idle');e.style.left='auto';e.style.right='6%'}
+const cv=$('fp'),g=cv.getContext('2d'),CW=360,CH=300,HOR=125,CX=180;cv.width=720;cv.height=600;
+let cam=0,vel=0,sk='start',t0=0,boost=3,shake=0,sd=7,schP=0,fw=[],ft=0;
+const TH0={start:'town',walk0:'town',loc1:'town',walk1:'town',loc2:'town',school:'school',callOut:'school',callIn:'school',loc3:'sea',walk3:'sea',loc4:'fest',meet:'fest',clear:'fest',over:'fest'};
+const MV0={walk0:1,loc1:.5,walk1:1,loc2:.3,loc3:.5,walk3:1};
+const PH0={loc1:1,loc2:1,loc3:1,loc4:1,callOut:2,callIn:2};
+const P=d=>100/d;
+const rr=(x,y,w,h,r)=>{g.beginPath();g.roundRect?g.roundRect(x,y,w,h,r):g.rect(x,y,w,h)};
+function stg(k){sk=k;t0=performance.now();boost=2.5;if(k=='start')sd=7;if(/^over/.test(k))shake=1.2;if(k=='wait2')RP=RPL[Math.floor(Math.random()*RPL.length)]}
+function shila(x,gy,s,m,T){const y=gy-(m=='clear'?Math.abs(Math.sin(T*6))*.5*s:0);
+g.fillStyle='#333';g.fillRect(x-.22*s,y-.6*s,.17*s,.6*s);g.fillRect(x+.05*s,y-.6*s,.17*s,.6*s);
+g.fillStyle='#e8607a';g.fillRect(x-.32*s,y-1.25*s,.64*s,.7*s);
+g.strokeStyle='#e8607a';g.lineWidth=.14*s;g.lineCap='round';
+const a=-1.6+Math.sin(T*8)*.5;g.beginPath();g.moveTo(x+.32*s,y-1.15*s);g.lineTo(x+.32*s+Math.cos(a)*.6*s,y-1.15*s+Math.sin(a)*.6*s);g.stroke();
+g.beginPath();g.moveTo(x-.32*s,y-1.15*s);g.lineTo(m=='clear'?x-.5*s:x-.45*s,m=='clear'?y-1.8*s:y-.6*s);g.stroke();
+g.fillStyle='#ffd9b0';g.beginPath();g.arc(x,y-1.55*s,.3*s,0,7);g.fill();
+g.fillStyle='#7a4a2a';g.beginPath();g.arc(x,y-1.55*s,.3*s,Math.PI,0);g.fill();
+g.fillStyle='#222';g.beginPath();g.arc(x-.1*s,y-1.5*s,.04*s,0,7);g.arc(x+.1*s,y-1.5*s,.04*s,0,7);g.fill();
+g.fillStyle='#fff';g.font=Math.max(9,.26*s)+'px sans-serif';g.textAlign='center';g.fillText('シラス',x,y-2*s)}
+function bld(side,i,d){const s=P(d),gy=HOR+s,h=(i*7919%5+2)*.9,w=1.8+(i*31%3)*.4,x1=CX+side*2.1*s,x2=CX+side*(2.1+w)*s;
+g.fillStyle='#161a2c';g.fillRect(Math.min(x1,x2),gy-h*s,Math.abs(x2-x1),h*s);
+for(let r=0;r<h*1.2;r++)for(let c=0;c<2;c++){g.fillStyle=(i+r*3+c*5)%3?'#ffd36a':'#2a2f4a';const wx=CX+side*(2.45+c*.8)*s;g.fillRect(wx-(side<0?.4*s:0),gy-(r*.8+.9)*s,.4*s,.4*s)}}
+function R(ts){requestAnimationFrame(R);const dt=Math.min(.05,(ts-(R.l||ts))/1000);R.l=ts;const T=ts/1000,th=TH[sk]||'town',fe=th=='fest';
+const tv=(MV[sk]||0)+boost;boost=Math.max(0,boost-dt*1.5);vel+=(tv-vel)*Math.min(1,dt*3);cam+=vel*dt*2.2;schP+=((th=='school'?1:0)-schP)*Math.min(1,dt*.8);
+g.setTransform(2,0,0,2,0,0);let sx=0,sy=Math.sin(cam*7)*vel*2.5;if(shake>0){shake-=dt;sx=(Math.random()-.5)*16*shake;sy+=(Math.random()-.5)*12*shake}
+g.translate(sx,sy);
+const sg=g.createLinearGradient(0,0,0,HOR);sg.addColorStop(0,fe?'#2a0f3a':'#0b0f2a');sg.addColorStop(1,fe?'#a2406a':'#2b3a6a');g.fillStyle=sg;g.fillRect(-20,-20,CW+40,HOR+20);
+g.fillStyle='#fff8';for(let i=0;i<30;i++)g.fillRect((i*67)%CW,(i*29)%100,1.5,1.5);
+g.fillStyle='#fff4c8';g.beginPath();g.arc(290,40,14,0,7);g.fill();
+if(fe&&T>ft){ft=T+(sk=='clear'?.3:1.3);fw.push({x:40+Math.random()*280,y:25+Math.random()*60,a:0,h:Math.random()*360})}
+fw=fw.filter(f=>(f.a+=dt)<1.3);fw.forEach(f=>{g.strokeStyle='hsla('+f.h+',100%,65%,'+(1-f.a/1.3)+')';g.lineWidth=2;for(let i=0;i<18;i++){const an=i/18*6.283,r=f.a*55,gy=f.a*f.a*12;g.beginPath();g.moveTo(f.x+Math.cos(an)*r*.7,f.y+Math.sin(an)*r*.7+gy);g.lineTo(f.x+Math.cos(an)*r,f.y+Math.sin(an)*r+gy);g.stroke()}});
+g.fillStyle=fe?'#2b1c24':'#1b1d28';g.fillRect(-20,HOR,CW+40,CH);
+if(th=='sea'){g.fillStyle='#10304e';g.beginPath();g.moveTo(CX,HOR);g.lineTo(CW+20,HOR);g.lineTo(CW+20,CH+20);g.lineTo(CX+120,CH+20);g.fill();g.fillStyle='#ffffff30';for(let i=0;i<8;i++)g.fillRect(CX+60+((i*37+T*20)%110),HOR+8+i*14,20+i*2,2)}
+g.fillStyle='#3a3a46';g.beginPath();g.moveTo(CX-3,HOR);g.lineTo(CX+3,HOR);g.lineTo(CX+240,CH+10);g.lineTo(CX-240,CH+10);g.fill();
+g.fillStyle='#d8d8b0';{const sp=1.2,b0=Math.floor(cam/sp);for(let i=14;i>=0;i--){const d=(b0+i)*sp-cam;if(d<.5)continue;const y1=HOR+P(d),y0=HOR+P(d+.5),w=.05*P(d);g.fillRect(CX-w/2,y0,w,y1-y0)}}
+if(!fe){const sp=3,b=Math.floor(cam/sp);for(let i=7;i>=0;i--){const n=b+i,d=n*sp-cam;if(d<.6)continue;bld(-1,n,d);if(th!='sea')bld(1,n+3,d)}}
+if(fe){const sp=3.5,b=Math.floor(cam/sp);for(let i=6;i>=0;i--){const n=b+i,d=n*sp-cam;if(d<.7)continue;const s=P(d),gy=HOR+s;[-1,1].forEach(m=>{const x=CX+m*2.2*s,w=1.5*s,l=Math.min(x,x+m*w);g.fillStyle='#4a2630';g.fillRect(l,gy-1.6*s,w,1.6*s);g.fillStyle=(n+m)%2?'#e8d04a':'#e84a4a';g.fillRect(l,gy-1.9*s,w,.4*s);g.fillStyle='#ffb347';g.fillRect(l+.2*s,gy-1.2*s,w-.4*s,.5*s)})}}
+if(th=='school'){const d=Math.max(2.2,7-schP*4.5),s=P(d),gy=HOR+s;g.fillStyle='#1d2238';g.fillRect(CX-3*s,gy-2.6*s,6*s,2.6*s);g.fillStyle='#2a3050';g.fillRect(CX-3.3*s,gy-2.9*s,6.6*s,.3*s);
+for(let r=0;r<2;r++)for(let c=0;c<5;c++){g.fillStyle=(c+r)%4==0&&Math.sin(T*3+c)>0?'#8a9a50':'#0e1020';g.fillRect(CX-2.7*s+c*1.1*s,gy-2.3*s+r*1.0*s,.7*s,.6*s)}
+g.fillStyle='#0a0a14';g.fillRect(CX-.4*s,gy-.9*s,.8*s,.9*s);[-1,1].forEach(m=>{g.fillStyle='#555';g.fillRect(CX+m*1.5*s-.08*s,gy-1.1*s,.16*s,1.1*s)});
+g.fillStyle='#e8e0c0';g.font='bold '+Math.max(9,.42*s)+'px sans-serif';g.textAlign='center';g.fillText('宇多津小学校',CX,gy-3.05*s)}
+{const sp=2.4,b=Math.floor(cam/sp);for(let i=8;i>=0;i--){const n=b+i,d=n*sp-cam;if(d<.6)continue;const s=P(d),gy=HOR+s;
+if(fe){g.strokeStyle='#e84a4a';g.lineWidth=Math.max(1,.03*s);g.beginPath();g.moveTo(CX-1.6*s,gy-2.4*s);g.quadraticCurveTo(CX,gy-1.9*s,CX+1.6*s,gy-2.4*s);g.stroke();
+for(let k=-2;k<=2;k++){const ly=gy-2.4*s+.25*s*(1-(k/2.5)**2);g.fillStyle='#ff4040';g.shadowColor='#ff6040';g.shadowBlur=8;g.beginPath();g.arc(CX+k*.65*s,ly+.15*s,.18*s,0,7);g.fill();g.shadowBlur=0}}
+[-1,1].forEach(m=>{g.fillStyle='#222';g.fillRect(CX+m*1.6*s-.04*s,gy-2.4*s,.08*s,2.4*s);g.fillStyle=th=='school'&&Math.random()<.08?'#665':'#ffe9a0';g.shadowColor='#ffd36a';g.shadowBlur=10;g.beginPath();g.arc(CX+m*1.6*s,gy-2.45*s,.14*s,0,7);g.fill();g.shadowBlur=0})}}
+if(fe){const tg=sk=='loc4'?6:1.7;sd+=(tg-sd)*Math.min(1,dt*(sk=='loc4'?.6:1.2));shila(CX,HOR+P(sd),P(sd),sk,T)}
+if(vel>1.2){g.strokeStyle='#ffffff40';g.lineWidth=1;for(let i=0;i<14;i++){const an=i*.45+Math.random()*.3,r1=70+Math.random()*30,r2=r1+30*vel;g.beginPath();g.moveTo(CX+Math.cos(an)*r1*1.3,150+Math.sin(an)*r1);g.lineTo(CX+Math.cos(an)*r2*1.3,150+Math.sin(an)*r2);g.stroke()}}
+const vg=g.createRadialGradient(CX,150,80,CX,150,240);vg.addColorStop(0,'#0000');vg.addColorStop(1,'#000b');g.fillStyle=vg;g.fillRect(-20,-20,CW+40,CH+40);
+const pk=PH[sk];if(pk){const e=Math.min(1,(performance.now()-t0)/450),r=1-Math.pow(1-e,3),py=CH-r*175+Math.sin(T*2)*2,px0=CX-52;
+g.fillStyle='#e8b98a';g.beginPath();g.ellipse(px0-8,py+150,20,34,.3,0,7);g.ellipse(px0+112,py+150,20,34,-.3,0,7);g.fill();
+g.fillStyle='#0c0c10';rr(px0,py,104,200,12);g.fill();g.fillStyle=pk==2?'#0a8f55':'#e9f6e9';rr(px0+5,py+8,94,184,8);g.fill();
+g.textAlign='center';g.font=(34+(pk==2?Math.sin(T*10)*4:0))+'px sans-serif';g.fillText(pk==2?'📞':'📍',px0+52,py+75);
+g.fillStyle=pk==2?'#fff':'#06a047';g.font='bold 12px sans-serif';g.fillText(pk==2?(/^(start|wait2|over3)$/.test(sk)?'着信 シラス':'発信中…'):'シラスから位置情報',px0+52,py+110)}
+if(/^over/.test(sk)){g.fillStyle='rgba(255,0,0,'+(.25+.15*Math.sin(T*20))+')';g.fillRect(-20,-20,CW+40,CH+40);g.font='bold '+(30+Math.sin(T*12)*4)+'px sans-serif';g.textAlign='center';g.lineWidth=5;g.strokeStyle='#000';g.fillStyle='#fff';const ot=OT[sk]||'エロエリー！！';g.strokeText(ot,CX,70);g.fillText(ot,CX,70)}
+if(sk=='clear'){g.font='bold 30px sans-serif';g.textAlign='center';g.lineWidth=5;g.strokeStyle='#000';g.fillStyle='#ffd36a';g.strokeText('ありがとう！',CX,60);g.fillText('ありがとう！',CX,60)}}
+requestAnimationFrame(R);
+const TH={start:'town',ask:'town',over1:'town',over2:'town',loc1:'town',sevenRoad:'school',over3:'school',famiCar:'town',rhythm1:'town',fami:'town',over4:'town',wait1:'town',wait2:'town',rei:'fest',photo:'fest',bye:'fest',clear:'fest',over5:'fest',over6:'fest',overDie:'fest'};
+const MV={sevenRoad:1,famiCar:.5,wait1:.4};
+const PH={start:2,loc1:1,wait2:2,over3:2};
+const OT={overDie:'バチーン！！'};
+const RPL=['宇多津駅の裏の駐車場','海沿いの公園','うどん屋さんの前','ゴールドタワーの下','堤防の灯台のそば'];let RP='';
+const GO={i:'💥😱',end:1,big:'GAME OVER'};
+const S={
+start:{i:'🚉',t:['宇多津駅の改札前。','伊丹のスマホが鳴った。'],call:'📞 シラスから着信！',m:{t:'もしもし！今日、祭り来るんやってな？来てな！',l:null},c:[['祭りに向かう','ask'],['向かわない','over1']]},
+over1:{...GO,t:['伊丹「ごめん、今日は行かんわ」','シラス「……」','シラス「エロエリー！！」']},
+ask:{i:'🚶',t:['祭りに行くことにした。','でも、会場の場所がわからん。'],c:[['シラスに電話をかける','loc1'],['アッピーとLINEをする','over2']]},
+over2:{...GO,t:['伊丹「アッピー、祭りってどこでやってるん？」','アッピーから返信が来た。'],m:{f:'アッピー',t:'エロエリー！！',l:null}},
+loc1:{i:'📱📍',t:['シラスが電話に出た。','少しして、位置情報が送られてきた。'],m:{t:'ここに来たらいいよ！',l:'📍 ファミリーマート方面とセブンイレブン方面の間'},c:[['ファミリーマートのほうへ行く','famiCar'],['セブンイレブンのほうへ行く','sevenRoad']]},
+sevenRoad:{i:'🏪🌑',t:['セブンイレブンのほうへ歩いていくと、だんだん道が暗くなってきた。','宇多津小学校のほうへ案内される道や…。','どっちに進む？'],c:[['北へ進む','over3'],['南へ進む','over3'],['西へ進む','over3'],['東へ進む','over3']]},
+over3:{...GO,t:['どの方角に進んでも、突然スマホが鳴った。'],call:'📞 シラスから着信！',m:{t:'どこ行ってんねん！！ エロエリー！！',l:null}},
+famiCar:{i:'🚗🏪',t:['ファミリーマートに車を止めることにした。','車を走らせる前に、リズムに合わせてエンジンをかけよう！'],c:[['リズムゲームを始める','rhythm1']]},
+rhythm1:{i:'🥁',rh:1,nx:'fami',t:['ピンクの玉が線に重なったらタップ！','8回中6回成功すれば出発できる。']},
+fami:{i:'🏪',t:['ファミリーマートに着いた。','でも、シラスの姿が見えない。'],c:[['シラスに電話をかける','over4'],['いったん帰る','wait1']]},
+over4:{...GO,t:['伊丹「もしもし、シラス？着いたで！」','シラスが電話に出た。','シラス「今忙しいねん！！ エロエリー！！」']},
+wait1:{i:'🚶💬',t:['伊丹「…帰るわ」','引き返そうとしたそのとき、シラスからメッセージが届いた。'],m:{t:'ちょっとお待ち！今から電話するわ！',l:null},c:[['かかってきた電話に出る','wait2']]},
+wait2:{i:'📞',t:['電話に出ると、シラスの声が聞こえた。'],call:'📞 シラスから着信！',get m(){return{t:'ここ来たらいいよ！',l:'📍 '+RP}},c:[['その場所へ向かう','rei']]},
+rei:{i:'🏮',t:['教えてもらった場所に着いた。','シラスと、もう一人。レイさんがいた。','レイさんが手を差し出してきた。'],c:[['レイさんと握手する','photo'],['握手しない','overDie']]},
+overDie:{...GO,t:['伊丹「…握手はええわ」','レイさん「あ？」','バチーン！！ 叩かれてしまった…。','伊丹はそのまま倒れた。']},
+photo:{i:'🤝📸',t:['レイさんと握手した。','シラス「せっかくやし、写真撮ろうや！」'],c:[['写真を撮る','bye'],['撮らない','over5']]},
+over5:{...GO,t:['伊丹「写真はええわ」','シラス「……」','シラス「エロエリー！！」']},
+bye:{i:'📸🎆',t:['三人で、花火を背に写真を撮った。','楽しい夜やった。そろそろ帰る時間。'],c:[['「ありがとう」と言う','clear'],['「バイバイ」と言う','over6']]},
+clear:{i:'🎉🏠',end:1,t:['伊丹「今日はほんまにありがとう！」','シラス「こっちこそ、来てくれてありがとう！」','伊丹は無事に帰宅できた。'],big:'🎊 ゲームクリア！ 🎊'},
+over6:{...GO,t:['伊丹「バイバイ！」','シラス「…………」','シラス「エロエリー！！」']}
+};
+function rhythm(nx){$('ch').innerHTML=`<div id="rh" style="position:relative;height:230px;background:#0006;border-radius:14px;overflow:hidden"><div style="position:absolute;left:0;right:0;top:176px;height:4px;background:#ffb347"></div><div id="rs" style="position:absolute;top:8px;left:12px;font-size:14px"></div></div><button id="tap" style="text-align:center;font-size:22px;padding:22px">🥁 タップ！</button>`;
+const rh=$('rh'),sc=$('rs'),N=8,L=178;let hit=0,sp=0,dn=0,ns=[],lt=performance.now(),st=lt,on=1;
+const upd=()=>sc.textContent='成功 '+hit+' / '+N;upd();
+$('tap').onpointerdown=()=>{let b=null;ns.forEach(n=>{if(!n.d&&Math.abs(n.y-L)<38&&(!b||Math.abs(n.y-L)<Math.abs(b.y-L)))b=n});if(b){b.d=1;b.e.style.background='#5f5';b.e.style.transform='scale(1.6)';hit++;dn++;upd()}};
+(function f(now){if(!on)return;const dt=(now-lt)/1000;lt=now;
+if(sp<N&&now-st>sp*800+500){const e=document.createElement('div');e.style.cssText='position:absolute;left:calc(50% - 18px);width:36px;height:36px;border-radius:50%;background:#ff6b9a;top:-40px;transition:transform .15s';rh.appendChild(e);ns.push({e,y:-20});sp++}
+ns.forEach(n=>{n.y+=170*dt;n.e.style.top=(n.y-18)+'px';if(!n.d&&n.y>L+38){n.d=1;dn++;n.e.style.opacity=.2}});
+if(dn>=N){on=0;rh.innerHTML='<div style="padding:60px 10px;text-align:center;font-size:20px;line-height:1.8">'+(hit>=6?'🚗 エンジン始動！':'うまくいかなかった…')+'<br>'+hit+' / '+N+'</div>';if(hit>=6)setTimeout(()=>go(nx),1400);else{const b=document.createElement('button');b.textContent='もう一度やる';b.onclick=()=>rhythm(nx);$('ch').appendChild(b)}return}
+requestAnimationFrame(f)})(lt)}
+function go(k){const s=S[k];stg(k);$('ico').textContent=s.i;$('cnt').textContent=s.n?'位置情報 '+s.n+'/4':'';
+let h=s.t.filter(Boolean).map(x=>'<p>'+x+'</p>').join('');
+if(s.call)h='<div class="call">'+s.call+'</div>'+h;
+h='<div class="card">'+h+'</div>';
+if(s.m)h+='<div class="msg"><b>'+(s.m.f||'シラス')+'</b>'+s.m.t+(s.m.l?'<div class="loc">'+s.m.l+'</div>':'')+'</div>';
+if(s.big)h+='<div class="end">'+s.big+'</div>';
+$('box').innerHTML=h;$('ch').innerHTML='';
+if(s.rh){rhythm(s.nx);return}const cs=s.end?[['もう一度あそぶ','start']]:s.c;
+cs.forEach(a=>{const b=document.createElement('button');b.textContent=a[0];b.onclick=()=>{go(a[1]);scrollTo(0,0)};$('ch').appendChild(b)})}
+go('start');
+</script></body></html>
